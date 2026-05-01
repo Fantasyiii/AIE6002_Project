@@ -1,0 +1,26 @@
+# Core RAG Framework
+langchain~=0.2.0
+langchain-community~=0.2.0
+langchain-openai~=0.1.0
+langchain-huggingface~=0.1.0
+
+# Vector Store
+# ChromaDB 1.5.x provides pre-built wheels (no C++ compiler needed)
+chromadb>=0.5.0
+
+# Embeddings (Local)
+sentence-transformers~=2.7.0
+
+# API Framework
+fastapi~=0.111.0
+uvicorn~=0.30.0
+python-multipart~=0.0.9
+
+# Data Processing
+pandas~=2.1.0
+numpy>=2.0
+
+# Utilities
+python-dotenv~=1.0.0
+tiktoken~=0.7.0
+requests~=2.32.0

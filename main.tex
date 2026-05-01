@@ -1,0 +1,110 @@
+\documentclass[12pt, a4paper]{article}
+
+% Required Packages
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\usepackage{graphicx}
+
+% Formatting details
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=blue,
+}
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+
+% Title Page Information
+\title{\textbf{AIE6002 Project Proposal}\\[0.8em] 
+\Large VibeMatch: A Semantic Movie Recommendation Engine via Retrieval-Augmented Generation (RAG)}
+
+\author{%
+  Yifei Chen\thanks{Equal contribution} \\
+  \texttt{225085000@link.cuhk.edu.cn} \\
+  \and
+  Lei Zhang\thanks{Equal contribution} \\
+  \texttt{122090746@link.cuhk.edu.cn} \\
+  \and
+  Shuhao Shi\thanks{Equal contribution} \\
+  \texttt{122090466@link.cuhk.edu.cn} \\
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\vspace{-2em}
+\begin{abstract}
+Traditional movie recommendation systems rely heavily on Collaborative Filtering (CF) or hard-coded metadata tags, which often fail to capture complex, nuanced user requests based on specific "vibes," emotional tones, or intricate plot elements. This project proposes \textbf{VibeMatch}, an interactive Natural Language Processing (NLP) application that utilizes a Retrieval-Augmented Generation (RAG) pipeline to provide highly personalized, semantic movie recommendations. By combining a local vector database with a Large Language Model (LLM), the system bridges the gap between natural language understanding and factual, grounded data retrieval, effectively mitigating the LLM hallucination problem.
+\end{abstract}
+
+\section{Introduction and Motivation}
+When users search for movies, their queries are increasingly conversational and context-driven (e.g., \textit{"I want a movie about a mid-life crisis with dark humor, taking place in Europe, and having a heartwarming ending"}). 
+
+\textbf{Limitations of Current Systems:} Traditional Collaborative Filtering suffers from the "cold-start" problem and cannot process semantic text. Content-Based Filtering relies on rigid tags (genre, director) that lack emotional depth. Furthermore, relying solely on LLMs (like standard ChatGPT) to recommend movies often leads to "hallucinations"—the model might invent non-existent movies or confidently mix up plotlines from different films. 
+
+\textbf{Proposed Solution:} A RAG-based approach anchors the generative power of an LLM to a verified, external database of real movie plots, ensuring that every recommendation is both highly relevant to the semantic query and 100\% factually accurate.
+
+\section{System Architecture and Methodology}
+The VibeMatch system is composed of three primary pipelines: Data Ingestion, Semantic Retrieval, and Augmented Generation.
+
+\subsection{Data Ingestion and Preprocessing}
+The project will utilize the open-source \textbf{TMDB 5000 Movie Dataset} (from Kaggle), specifically extracting the \texttt{Title}, \texttt{Genres}, \texttt{Release Year}, and \texttt{Overview} (Plot Summary) columns. 
+\begin{itemize}
+    \item \textbf{Text Chunking Strategy:} To ensure optimal embedding quality, long plot summaries will be processed using LangChain's \texttt{RecursiveCharacterTextSplitter} with a chunk size of 500 tokens and a chunk overlap of 50 tokens to maintain context continuity.
+    \item \textbf{Embedding Model:} The chunked texts will be transformed into high-dimensional vectors using a dense embedding model (e.g., OpenAI \texttt{text-embedding-3-small} or HuggingFace \texttt{all-MiniLM-L6-v2}).
+\end{itemize}
+
+\subsection{Vector Storage and Retrieval Strategy}
+The embeddings will be indexed in a lightweight, local vector database (\textbf{ChromaDB} or \textbf{FAISS}). 
+\begin{itemize}
+    \item \textbf{Similarity Search:} The primary retrieval mechanism will be based on \textbf{Cosine Similarity}:
+    \begin{equation}
+        \text{similarity} = \cos(\theta) = \frac{\mathbf{A} \cdot \mathbf{B}}{\|\mathbf{A}\| \|\mathbf{B}\|}
+    \end{equation}
+    where $\mathbf{A}$ represents the embedded user query and $\mathbf{B}$ represents the embedded movie plots.
+    \item \textbf{Maximal Marginal Relevance (MMR):} To prevent the system from returning three overly identical movies, an MMR retrieval strategy will be implemented to optimize for both relevance to the query and diversity among the recommended items.
+\end{itemize}
+
+\subsection{Generative Component (LLM Integration)}
+The Top-K retrieved movie summaries will be injected into a carefully engineered prompt. The prompt will instruct the LLM (e.g., GPT-4o-mini or Gemini) to act as an expert film critic. The LLM will parse the retrieved contexts and generate a natural language response, explicitly explaining \textit{why} these specific movies match the user's requested "vibe."
+
+\section{Evaluation Plan}
+To ensure the system meets academic and practical standards, the project will be evaluated across two dimensions:
+\begin{enumerate}
+    \item \textbf{Quantitative Metrics (System Performance):} Measuring the end-to-end latency of the RAG pipeline and analyzing the memory footprint of the local vector store.
+    \item \textbf{Qualitative Metrics (Response Quality):} Utilizing a subset of complex, conversational test queries to evaluate if the retrieved movies align with the semantic intent, and manually verifying that the LLM generates zero hallucinated plot points (Faithfulness to the source context).
+\end{enumerate}
+
+\section{Expected Deliverables}
+\begin{itemize}
+    \item \textbf{Interactive Web UI:} A \texttt{Streamlit} application featuring a chat interface, streaming text output (typewriter effect), and an expandable "Source Data" panel showing the retrieved database entries.
+    \item \textbf{Codebase:} A clean, well-documented GitHub repository.
+    \item \textbf{Final Report:} A comprehensive PDF detailing the architecture, design choices, evaluation results, and potential future improvements.
+\end{itemize}
+
+\section{Detailed Project Timeline}
+\begin{table}[h!]
+    \centering
+    \begin{tabularx}{\textwidth}{@{}lX@{}}
+        \toprule
+        \textbf{Timeframe} & \textbf{Key Tasks \& Milestones} \\
+        \midrule
+        \textbf{Week 1: Data Setup} & Download TMDB dataset, perform exploratory data analysis (EDA), clean missing values, and implement the text chunking pipeline. \\
+        \textbf{Week 2: Vector DB} & Generate embeddings for all movies, initialize ChromaDB/FAISS, insert vectors, and test basic Cosine Similarity queries. \\
+        \textbf{Week 3: LLM \& RAG} & Integrate the LLM API via LangChain, design the system prompt, implement MMR retrieval, and test end-to-end generation. \\
+        \textbf{Week 4: UI \& Polish} & Develop the Streamlit frontend, conduct qualitative testing, fix edge-case bugs, and write the Final Capstone Report. \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\end{document}
