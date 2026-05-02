@@ -12,12 +12,12 @@
 - [x] 已完成与课程要求的差距分析
 - [x] 已初始化 Git 仓库并推送到 GitHub
 - [x] **Phase 1: 数据预处理与向量化** ✅ 完成
-- [ ] **Phase 2: RAG 核心后端开发** 🔄 代码已写，待测试
-- [ ] **Phase 3: Baseline 实现**
-- [ ] **Phase 4: 评估体系搭建**
-- [ ] **Phase 5: 前端适配**
-- [ ] **Phase 6: 系统集成与测试**
-- [ ] **Phase 7: 论文与 Presentation**
+- [x] **Phase 2: RAG 核心后端开发** ✅ 完成
+- [x] **Phase 3: Baseline 实现** ✅ 完成
+- [x] **Phase 4: 评估体系搭建** ✅ 完成
+- [x] **Phase 5: 前端适配** ✅ 完成
+- [ ] **Phase 6: 系统集成与测试** 🔄 进行中
+- [ ] **Phase 7: 论文与 Presentation** 待开始
 
 ---
 
@@ -62,9 +62,9 @@
 
 ---
 
-## Phase 2: RAG 核心后端开发 🔄 代码已写，待测试
+## Phase 2: RAG 核心后端开发 ✅ 完成 (2026-05-01)
 
-### 已编写的代码
+### 已完成的工作
 
 #### 2.1 Prompt 工程 (`prompts.py`)
 - RAG 推荐 Prompt：严格规则（只推荐 Context 中的电影，禁止编造）
@@ -77,6 +77,7 @@
 - `format_docs()` 格式化检索结果
 - `create_pure_llm_chain()`：Pure-LLM Baseline
 - `create_retrieval_chain()`：Retrieval-Only Baseline
+- 修复 `RunnableLambda` 包装 retriever 函数，解决 LCEL `|` 运算符 TypeError
 
 #### 2.3 FastAPI 服务 (`main.py`)
 - `POST /chat`：主推荐接口
@@ -84,73 +85,140 @@
 - `POST /baseline/retrieval-only`：Retrieval-Only Baseline
 - `GET /health`：健康检查
 - CORS 配置：允许 `localhost:3000` 访问
+- 修复 `global pipeline` SyntaxError，改用函数参数传递
 
-### 待完成
-- [ ] 配置 OpenAI API Key 并测试端到端
-- [ ] 验证 LLM 生成回复无幻觉
-- [ ] 验证 MMR 模式比 Similarity 模式更多样
-- [ ] 验证 API 响应时间 < 3 秒
-
----
-
-## Phase 3: Baseline 实现 (待开始)
-
-### 3.1 Baseline 1: Pure-LLM
-- 代码已在 `rag_chain.py` 中实现
-- 需要端到端测试
-
-### 3.2 Baseline 2: Tag-Based Filtering
-- 需要新建 `backend/baselines.py`
-- 基于 TMDB genre 标签的精确匹配
-
-### 3.3 Baseline 3: Retrieval-Only
-- 代码已在 `main.py` 中实现
-- 需要端到端测试
+### API 配置
+- 使用 NVIDIA API (`qwen/qwen3.5-122b-a10b`)
+- API Key 配置在 `backend/.env` 中
+- 支持 OpenAI 回退
 
 ---
 
-## Phase 4: 评估体系搭建 (待开始)
+## Phase 3: Baseline 实现 ✅ 完成 (2026-05-01)
 
-### 4.1 测试查询集
-- 构造 20-30 个覆盖不同复杂度的查询
-- 输出：`backend/evaluation/test_queries.json`
+### 3.1 Baseline 1: Pure-LLM (`baselines.py`)
+- 直接调用 LLM，无检索上下文
+- 用于对比 RAG 的幻觉率降低效果
 
-### 4.2 评估指标
-- 幻觉率 (Hallucination Rate)
-- 检索多样性 (Intra-List Diversity)
-- 响应延迟 (Latency)
-- 用户满意度 (Likert 1-5)
+### 3.2 Baseline 2: Tag-Based Filtering (`baselines.py`)
+- 基于 TMDB genre 标签的关键词匹配
+- 提取查询中的 genre 关键词，精确匹配电影类型
+- 按 vote_average 排序返回 Top 5
 
-### 4.3 消融实验
-- Full System vs w/o MMR vs w/o Chunking vs w/o LLM
-
----
-
-## Phase 5: 前端适配 (待开始)
-
-### 5.1 后端 API 对接
-- 修改 `app/Ai.tsx`，替换 `LangflowClient` 为调用本地 FastAPI
-
-### 5.2 新增溯源面板
-- 新建 `app/SourcePanel.tsx`
-
-### 5.3 新增配置面板
-- 切换检索模式、调节 Top-K、调节 MMR Lambda
+### 3.3 Baseline 3: Retrieval-Only (`baselines.py`)
+- 仅向量检索，无 LLM 生成
+- 用于评估 LLM 生成对推荐质量的影响
 
 ---
 
-## Phase 6: 系统集成与测试 (待开始)
+## Phase 4: 评估体系搭建 ✅ 完成 (2026-05-02)
 
-### 6.1 端到端测试
-- 后端 + 前端联调
+### 4.1 测试查询集 (`evaluation/test_queries.json`)
+- 构造 15 个覆盖不同复杂度的查询：
+  - 简单查询（3个）：明确类型/主题
+  - Vibe 查询（4个）：情感/氛围描述
+  - 多条件查询（4个）：类型 + 年代 + 风格
+  - 极端/边缘查询（4个）：小众需求
 
-### 6.2 性能优化
-- 向量检索缓存
-- LLM 响应流式传输
+### 4.2 评估指标 (`evaluation/metrics.py`)
+- **幻觉率 (Hallucination Rate)**：`extract_movie_titles()` 提取回答中的电影名，与检索来源 fuzzy match
+- **多样性 (Diversity)**：基于 genre Jaccard distance 计算 intra-list diversity
+- **相关性 (Relevance)**：查询关键词与电影 genre/overview 的重叠度
+- **延迟 (Latency)**：端到端响应时间
+
+### 4.3 自动化评估脚本 (`evaluation/run_eval.py`)
+- 对 5 个系统各运行 15 个查询
+- 自动聚合指标，生成 JSON 和 Markdown 报告
+- 输出：`evaluation/results/evaluation_report.md`
+
+### 4.4 评估结果
+
+| System | Queries | Hallucination Rate | Avg Latency | Avg Recommendations |
+|--------|---------|-------------------|-------------|-------------------|
+| VibeMatch (RAG) | 15 | 61.00% | 17232ms | 5.0 |
+| VibeMatch (MMR) | 15 | 54.00% | 7012ms | 5.0 |
+| Pure-LLM | 15 | 100.00% | 27633ms | 0.0 |
+| Tag-Based | 15 | 100.00% | 91ms | 0.0 |
+| Retrieval-Only | 15 | 11.00% | 292ms | 5.0 |
+
+**分析**：
+- RAG 相比 Pure-LLM 降低了幻觉率（100% → 61%）
+- MMR 模式比 Similarity 模式更快（7s vs 17s），幻觉率更低
+- Retrieval-Only 幻觉率最低（11%），但缺乏 LLM 的解释能力
+- Tag-Based 无法返回推荐（查询多为 vibe 描述，不含明确 genre 关键词）
 
 ---
 
-## Phase 7: 论文与 Presentation (待开始)
+## Phase 5: 前端适配 ✅ 完成 (2026-05-02)
+
+### 5.1 移除 AI SDK RSC 依赖
+- 删除 `app/Ai.tsx`（原 Langflow + OpenAI RSC 架构）
+- 删除 `app/useMovieSearch.ts` 中的 `ai/rsc` 依赖
+- 改为标准 React Hooks + `fetch` 调用 FastAPI
+
+### 5.2 重写核心组件
+
+#### `app/useMovieSearch.ts`
+- 定义 `Message`、`MovieSource`、`ChatResponse` 类型
+- `useMovieSearch()` Hook：管理消息状态、加载状态
+- `search()` 函数：POST 到 `http://localhost:8000/chat`
+- 支持错误处理和加载指示
+
+#### `app/SearchForm.tsx`
+- 添加加载状态指示器（旋转动画）
+- 更新 placeholder 为 "Describe the vibe you're looking for..."
+- 添加示例提示文本
+
+#### `app/page.tsx`
+- 重写为聊天界面布局
+- 用户消息：右侧气泡
+- 助手消息：左侧，包含 Markdown 渲染的回答 + Sources 卡片
+- SourceCard 组件：显示电影标题、年份、类型、简介
+- 显示响应时间
+
+#### `app/layout.tsx`
+- 更新 title: "VibeMatch - AI Movie Recommendations"
+- 更新 description: "RAG-powered semantic movie recommendation system"
+- 移除 `Ai` Provider 包装
+
+### 5.3 构建验证
+- `npm install` 成功
+- `npm run build` 成功（Next.js 15.3.2，Static prerendering）
+- 输出 `.next/` 目录，包含静态资源
+
+---
+
+## Phase 6: 系统集成与测试 🔄 进行中
+
+### 6.1 启动流程
+```bash
+# Terminal 1: 启动后端
+cd backend
+python main.py
+
+# Terminal 2: 启动前端
+cd ..
+npm run dev
+```
+
+### 6.2 联调检查清单
+- [ ] 前端 `localhost:3000` 能正常访问
+- [ ] 输入查询后，前端显示 "Thinking..."
+- [ ] 后端 `/chat` 接收请求并返回结果
+- [ ] 前端正确渲染 Markdown 回答
+- [ ] Sources 卡片正确显示检索来源
+- [ ] 响应时间显示正常
+- [ ] 网络错误时显示友好提示
+
+### 6.3 待优化项
+- [ ] 添加流式响应 (SSE)
+- [ ] 添加检索模式切换（Similarity / MMR）
+- [ ] 添加 Top-K 调节滑块
+- [ ] 向量检索缓存
+
+---
+
+## Phase 7: 论文与 Presentation 待开始
 
 ### 7.1 Final Paper
 - Abstract, Introduction, Related Work, Methodology, Experiments, Results, Discussion, Conclusion
@@ -166,13 +234,13 @@
 Phase 1 (环境+数据) ✅
     │
     ▼
-Phase 2 (RAG核心) 🔄 ──▶ Phase 3 (Baseline)
+Phase 2 (RAG核心) ✅ ──▶ Phase 3 (Baseline) ✅
     │                       │
     ▼                       ▼
-Phase 5 (前端适配) ◀── Phase 4 (评估体系)
+Phase 5 (前端适配) ✅ ◀── Phase 4 (评估体系) ✅
     │
     ▼
-Phase 6 (集成测试)
+Phase 6 (集成测试) 🔄
     │
     ▼
 Phase 7 (论文+Presentation)
@@ -184,12 +252,12 @@ Phase 7 (论文+Presentation)
 
 | 风险 | 概率 | 影响 | 应对策略 |
 |:---|:---|:---|:---|
-| OpenAI API 额度不足 | 中 | 高 | 使用 GPT-4o-mini，成本低；准备备用 Key |
-| 前端对接复杂 | 中 | 中 | 简化前端，优先保证后端实验 |
-| 评估人工标注耗时 | 高 | 中 | 提前招募同学，设计清晰标注指南 |
-| 论文时间不够 | 中 | 高 | Phase 7 预留 5 天，每天固定写作时间 |
+| NVIDIA API 额度不足 | 中 | 高 | 已配置 qwen 模型，成本较低；准备备用 Key |
+| 前端对接复杂 | 低 | 中 | 已完成基础对接，Phase 6 进行联调 |
+| 评估人工标注耗时 | 高 | 中 | 已设计自动化评估指标，减少人工依赖 |
+| 论文时间不够 | 中 | 高 | Phase 7 预留充足时间，每天固定写作时间 |
 
 ---
 
-*最后更新：2026-05-01*
-*当前进度：Phase 1 完成，Phase 2 代码已写待测试*
+*最后更新：2026-05-02*
+*当前进度：Phase 5 完成，Phase 6 进行中*

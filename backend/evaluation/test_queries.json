@@ -1,0 +1,79 @@
+{
+  "queries": [
+    {
+      "id": 1,
+      "category": "simple",
+      "query": "推荐一部关于时间旅行的科幻电影"
+    },
+    {
+      "id": 2,
+      "category": "simple",
+      "query": "想要轻松愉快的浪漫喜剧，适合周末看"
+    },
+    {
+      "id": 3,
+      "category": "simple",
+      "query": "关于人工智能的哲学电影，不要太恐怖"
+    },
+    {
+      "id": 4,
+      "category": "vibe",
+      "query": "想要一部关于中年危机的黑色幽默电影，发生在欧洲，有暖心结局"
+    },
+    {
+      "id": 5,
+      "category": "vibe",
+      "query": "推荐一部关于二战的真实故事改编电影，要有感人的兄弟情谊"
+    },
+    {
+      "id": 6,
+      "category": "vibe",
+      "query": "寻找一部视觉震撼的太空冒险电影，类似于星际穿越"
+    },
+    {
+      "id": 7,
+      "category": "vibe",
+      "query": "关于家庭关系的温馨电影，适合和父母一起看，不要太煽情"
+    },
+    {
+      "id": 8,
+      "category": "multi-condition",
+      "query": "欧洲背景、暖心结局、2010年后的剧情片"
+    },
+    {
+      "id": 9,
+      "category": "multi-condition",
+      "query": "主角是人工智能的哲学电影，不要恐怖片，要有深度思考"
+    },
+    {
+      "id": 10,
+      "category": "multi-condition",
+      "query": "悬疑惊悚片，有反转结局，不要血腥暴力"
+    },
+    {
+      "id": 11,
+      "category": "multi-condition",
+      "query": "经典黑白电影，关于新闻记者的调查故事"
+    },
+    {
+      "id": 12,
+      "category": "edge",
+      "query": "动画电影，关于成长和自我发现，适合成年人观看"
+    },
+    {
+      "id": 13,
+      "category": "edge",
+      "query": "西部片，关于复仇和救赎，有壮丽的自然风光"
+    },
+    {
+      "id": 14,
+      "category": "edge",
+      "query": "科幻恐怖片，发生在太空站，有外星生物"
+    },
+    {
+      "id": 15,
+      "category": "edge",
+      "query": "音乐传记片，关于爵士乐手，有精彩的演奏场景"
+    }
+  ]
+}
