@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough, RunnableParallel
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel, RunnableLambda
 from langchain_core.documents import Document
 
 from prompts import create_rag_prompt, create_pure_llm_prompt
@@ -17,17 +17,33 @@ from vectorstore import load_vectorstore, similarity_search, mmr_search
 load_dotenv()
 
 # Configuration
-LLM_MODEL = "gpt-4o-mini"
 LLM_TEMPERATURE = 0.7
 
 
-def get_llm() -> ChatOpenAI:
-    """Initialize OpenAI LLM."""
-    return ChatOpenAI(
-        model=LLM_MODEL,
-        temperature=LLM_TEMPERATURE,
-        api_key=os.getenv("OPENAI_API_KEY")
-    )
+def get_llm():
+    """Initialize LLM (NVIDIA API or OpenAI)."""
+    # Try NVIDIA API first
+    nvidia_key = os.getenv("NVIDIA_API_KEY")
+    if nvidia_key and nvidia_key != "nvapi-":
+        return ChatOpenAI(
+            model=os.getenv("NVIDIA_MODEL", "minimaxai/minimax-m2.5"),
+            temperature=LLM_TEMPERATURE,
+            api_key=nvidia_key,
+            base_url=os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
+            timeout=120,
+            max_retries=2
+        )
+    
+    # Fallback to OpenAI
+    openai_key = os.getenv("OPENAI_API_KEY")
+    if openai_key:
+        return ChatOpenAI(
+            model="gpt-4o-mini",
+            temperature=LLM_TEMPERATURE,
+            api_key=openai_key
+        )
+    
+    raise ValueError("No API key found. Please set NVIDIA_API_KEY or OPENAI_API_KEY in .env")
 
 
 def format_docs(docs: List[Document]) -> str:
@@ -45,34 +61,22 @@ def format_docs(docs: List[Document]) -> str:
 def create_rag_chain(retrieval_mode: str = "similarity", top_k: int = 5):
     """
     Create RAG chain with specified retrieval mode.
-
-    Args:
-        retrieval_mode: "similarity" or "mmr"
-        top_k: Number of documents to retrieve
-
-    Returns:
-        Runnable chain
     """
-    # Load vector store
     vectorstore = load_vectorstore()
     if not vectorstore:
         raise ValueError("Vector store not found. Please run vectorstore.init_vectorstore() first.")
 
-    # Select retriever
     if retrieval_mode == "mmr":
-        def retriever(query):
+        def _retriever(query):
             return mmr_search(vectorstore, query, k=top_k)
     else:
-        def retriever(query):
+        def _retriever(query):
             return similarity_search(vectorstore, query, k=top_k)
 
-    # Create prompt
+    retriever = RunnableLambda(_retriever)
     prompt = create_rag_prompt()
-
-    # Create LLM
     llm = get_llm()
 
-    # Build RAG chain
     rag_chain = (
         RunnableParallel({
             "context": retriever | format_docs,
@@ -87,10 +91,7 @@ def create_rag_chain(retrieval_mode: str = "similarity", top_k: int = 5):
 
 
 def create_retrieval_chain(retrieval_mode: str = "similarity", top_k: int = 5):
-    """
-    Create retrieval-only chain (no LLM generation).
-    Returns raw retrieved documents.
-    """
+    """Create retrieval-only chain (no LLM generation)."""
     vectorstore = load_vectorstore()
     if not vectorstore:
         raise ValueError("Vector store not found.")
@@ -128,16 +129,8 @@ class RAGPipeline:
         self.retriever = create_retrieval_chain(retrieval_mode, top_k)
 
     def recommend(self, query: str) -> Dict:
-        """
-        Get movie recommendations for a query.
-
-        Returns:
-            Dict with keys: query, answer, sources, retrieval_mode
-        """
-        # Get retrieved documents
+        """Get movie recommendations for a query."""
         sources = self.retriever(query)
-
-        # Generate response
         answer = self.chain.invoke(query)
 
         return {
@@ -158,7 +151,6 @@ class RAGPipeline:
 
 
 if __name__ == "__main__":
-    # Test RAG pipeline
     print("Initializing RAG pipeline...")
     pipeline = RAGPipeline(retrieval_mode="similarity", top_k=3)
 
