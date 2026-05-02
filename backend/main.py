@@ -91,15 +91,15 @@ async def chat(request: ChatRequest):
 
     try:
         # Update pipeline configuration if needed
-        if request.retrieval_mode != pipeline.retrieval_mode or request.top_k != pipeline.top_k:
-            global pipeline
-            pipeline = RAGPipeline(
+        nonlocal_pipeline = pipeline
+        if request.retrieval_mode != nonlocal_pipeline.retrieval_mode or request.top_k != nonlocal_pipeline.top_k:
+            nonlocal_pipeline = RAGPipeline(
                 retrieval_mode=request.retrieval_mode,
                 top_k=request.top_k
             )
 
         # Get recommendation
-        result = pipeline.recommend(request.query)
+        result = nonlocal_pipeline.recommend(request.query)
 
         latency_ms = (time.time() - start_time) * 1000
 

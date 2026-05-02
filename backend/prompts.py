@@ -1,7 +1,7 @@
 """
 Prompt templates for RAG movie recommendation.
 """
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate
 
 # System prompt for movie recommendation
 SYSTEM_PROMPT = """You are an expert film critic and movie recommendation assistant.
@@ -59,7 +59,7 @@ Retrieved Context:
 Assistant Response:
 {response}
 
-List any hallucinated or factually incorrect information. If none, say "No hallucinations detected.""""
+List any hallucinated or factually incorrect information. If none, say "No hallucinations detected."""
 
 
 def create_hallucination_check_prompt() -> ChatPromptTemplate:
