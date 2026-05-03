@@ -2,24 +2,23 @@
 
 import { jetbrainsMono } from "./fonts";
 import { useRef, useState } from "react";
-import { useMovieSearch } from "./useMovieSearch";
 
 type Props = {
   shouldShowSuggestions: boolean;
+  onSearch: (query: string) => void;
+  isLoading: boolean;
 };
 
-export function SearchForm({ shouldShowSuggestions }: Props) {
+export function SearchForm({ shouldShowSuggestions, onSearch, isLoading }: Props) {
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const { search, isLoading } = useMovieSearch();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-    search(input).then(() => {
-      setInput("");
-      inputRef.current?.focus();
-    });
+    onSearch(input);
+    setInput("");
+    inputRef.current?.focus();
   };
 
   return (
