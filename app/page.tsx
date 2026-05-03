@@ -21,7 +21,7 @@ function SourceCard({ source }: { source: MovieSource }) {
 }
 
 export default function Home() {
-  const { messages, isLoading } = useMovieSearch();
+  const { messages, isLoading, search } = useMovieSearch();
   const hasMessages = messages.length > 0;
 
   return (
@@ -35,7 +35,11 @@ export default function Home() {
         h-[155px] md:h-[122px] grid max-w-screen-lg mx-auto md:flex w-full items-center gap-4 md:gap-8 p-4 md:p-8 bg-black bg-opacity-80 backdrop-blur-lg`}
       >
         <Logo />
-        <SearchForm shouldShowSuggestions={!hasMessages} />
+        <SearchForm
+          shouldShowSuggestions={!hasMessages}
+          onSearch={search}
+          isLoading={isLoading}
+        />
       </header>
 
       {hasMessages && (
