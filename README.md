@@ -24,7 +24,6 @@ VibeMatch 是一个基于 RAG（Retrieval-Augmented Generation）的语义化电
 | React 19 | UI 组件库 |
 | TypeScript | 类型安全 |
 | TailwindCSS | 样式框架 |
-| Vercel AI SDK | 流式 AI 交互 |
 
 ### 后端
 | 技术 | 用途 |
@@ -34,7 +33,7 @@ VibeMatch 是一个基于 RAG（Retrieval-Augmented Generation）的语义化电
 | LangChain | RAG 流程编排 |
 | ChromaDB 1.5.x | 本地向量数据库（预编译 wheel，无需 C++ 编译器） |
 | `all-MiniLM-L6-v2` (本地) | Embedding 模型（384 维，下载到项目目录） |
-| OpenAI GPT-4o-mini | 推荐生成 LLM |
+| NVIDIA API (qwen/qwen3.5-122b-a10b) | 推荐生成 LLM |
 
 ### 数据
 | 来源 | 说明 |
@@ -48,12 +47,14 @@ VibeMatch 是一个基于 RAG（Retrieval-Augmented Generation）的语义化电
 ```
 VibeMatch/
 ├── app/                          # Next.js 前端（基于 Movies++ 改造）
-│   ├── Ai.tsx                    # AI 交互核心，对接后端 API
-│   ├── page.tsx                  # 主页面
+│   ├── page.tsx                  # 主页面（聊天界面）
 │   ├── SearchForm.tsx            # 搜索表单
-│   ├── Movies.tsx                # 电影海报网格展示
 │   ├── useMovieSearch.ts         # 搜索逻辑 Hook
-│   └── ...                       # 其他组件
+│   ├── Markdown.tsx              # Markdown 渲染
+│   ├── Logo.tsx                  # VibeMatch Logo
+│   ├── fonts.tsx                 # 字体配置
+│   ├── globals.css               # 全局样式
+│   └── layout.tsx                # 根布局
 ├── backend/                      # Python 后端
 │   ├── main.py                   # FastAPI 入口
 │   ├── rag_chain.py              # LangChain RAG 核心
@@ -61,7 +62,12 @@ VibeMatch/
 │   ├── data_processor.py         # TMDB 数据预处理
 │   ├── download_model.py         # 模型下载脚本（支持国内镜像）
 │   ├── prompts.py                # Prompt 模板
+│   ├── baselines.py              # 三种基线系统
 │   ├── requirements.txt          # Python 依赖
+│   ├── evaluation/               # 评估框架
+│   │   ├── test_queries.json     # 15 个测试查询
+│   │   ├── metrics.py            # 评估指标
+│   │   └── run_eval.py           # 自动化评估脚本
 │   ├── models/                   # 本地模型目录
 │   │   └── all-MiniLM-L6-v2/    # Embedding 模型文件
 │   ├── data/                     # 数据目录
@@ -70,7 +76,6 @@ VibeMatch/
 ├── Dataset/                      # 原始数据集
 │   ├── tmdb_5000_movies.csv
 │   └── tmdb_5000_credits.csv
-├── scripts/                      # 数据获取脚本（来自 Movies++）
 ├── main.tex                      # 项目提案（LaTeX）
 ├── PROGRESS.md                   # 项目进度追踪
 ├── 技术栈.md                      # 技术栈说明
@@ -84,8 +89,8 @@ VibeMatch/
 ### 环境要求
 - Python 3.10+
 - Node.js 18+
-- pnpm
-- OpenAI API Key
+- npm
+- NVIDIA API Key（或 OpenAI API Key）
 
 ### 1. 克隆仓库
 
@@ -99,7 +104,9 @@ cd AIE6002_Project
 编辑 `backend/.env` 文件：
 
 ```env
-OPENAI_API_KEY=your_openai_api_key_here
+NVIDIA_API_KEY=your_nvidia_api_key_here
+NVIDIA_BASE_URL=https://integrate.api.nvidia.com/v1
+NVIDIA_MODEL=qwen/qwen3.5-122b-a10b
 ```
 
 ### 3. 安装并启动后端
@@ -120,15 +127,15 @@ python data_processor.py
 python vectorstore.py
 
 # 启动 FastAPI 服务
-uvicorn main:app --reload --port 8000
+python main.py
 ```
 
 ### 4. 安装并启动前端
 
 ```bash
 # 在项目根目录（新终端）
-pnpm install
-pnpm run dev
+npm install
+npm run dev
 ```
 
 ### 5. 访问应用
@@ -168,8 +175,8 @@ curl -X POST http://localhost:8000/chat \
 
 | 系统 | 描述 |
 |:---|:---|
-| **VibeMatch (Ours)** | 完整 RAG：ChromaDB + MMR + GPT-4o-mini |
-| **Pure-LLM** | 直接调用 GPT-4o-mini，无检索上下文 |
+| **VibeMatch (Ours)** | 完整 RAG：ChromaDB + MMR + qwen3.5-122b |
+| **Pure-LLM** | 直接调用 LLM，无检索上下文 |
 | **Tag-Based** | 基于 TMDB 类型标签的精确匹配过滤 |
 | **Retrieval-Only** | 仅返回 ChromaDB 检索结果，无 LLM 生成 |
 
@@ -179,7 +186,6 @@ curl -X POST http://localhost:8000/chat \
 - **Intra-List Diversity**：推荐列表的多样性分数
 - **Latency**：端到端响应延迟（ms）
 - **ROUGE-L**：生成文本与参考摘要的重叠度
-- **User Satisfaction**：Likert 1-5 人工评分
 
 ---
 
@@ -195,7 +201,7 @@ curl -X POST http://localhost:8000/chat \
 | **Baseline 对比** | 无 | 3 种基线系统 |
 | **评估体系** | 无 | 完整量化指标 + 消融实验 |
 | **溯源展示** | 无 | 可展开源数据面板 |
-| **部署依赖** | 5 个云服务账号 | 1 个 OpenAI API Key |
+| **部署依赖** | 5 个云服务账号 | 1 个 NVIDIA API Key |
 
 ---
 
