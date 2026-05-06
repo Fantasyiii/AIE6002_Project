@@ -16,7 +16,7 @@
 - [x] **Phase 3: Baseline 实现** ✅ 完成
 - [x] **Phase 4: 评估体系搭建** ✅ 完成
 - [x] **Phase 5: 前端适配** ✅ 完成
-- [ ] **Phase 6: 系统集成与测试** 🔄 进行中
+- [x] **Phase 6: 系统集成与测试** ✅ 完成
 - [ ] **Phase 7: 论文与 Presentation** 待开始
 
 ---
@@ -189,7 +189,7 @@
 
 ---
 
-## Phase 6: 系统集成与测试 🔄 进行中
+## Phase 6: 系统集成与测试 ✅ 完成 (2026-05-03)
 
 ### 6.1 启动流程
 ```bash
@@ -203,19 +203,36 @@ npm run dev
 ```
 
 ### 6.2 联调检查清单
-- [ ] 前端 `localhost:3000` 能正常访问
-- [ ] 输入查询后，前端显示 "Thinking..."
-- [ ] 后端 `/chat` 接收请求并返回结果
-- [ ] 前端正确渲染 Markdown 回答
-- [ ] Sources 卡片正确显示检索来源
-- [ ] 响应时间显示正常
-- [ ] 网络错误时显示友好提示
+- [x] 前端 `localhost:3000` 能正常访问
+- [x] 输入查询后，前端显示 "Thinking..."
+- [x] 后端 `/chat` 接收请求并返回结果
+- [x] 前端正确渲染 Markdown 回答
+- [x] Sources 卡片正确显示检索来源
+- [x] 响应时间显示正常
+- [x] 网络错误时显示友好提示
 
-### 6.3 待优化项
-- [ ] 添加流式响应 (SSE)
-- [ ] 添加检索模式切换（Similarity / MMR）
-- [ ] 添加 Top-K 调节滑块
-- [ ] 向量检索缓存
+### 6.3 修复的问题
+
+#### 前端状态共享问题 (2026-05-03)
+**问题**：`SearchForm.tsx` 和 `page.tsx` 各自独立调用 `useMovieSearch()`，导致消息状态不共享，搜索后界面不更新。
+
+**修复**：
+- `SearchForm.tsx`：移除 `useMovieSearch` 导入，改为通过 props 接收 `onSearch` 和 `isLoading`
+- `page.tsx`：统一调用 `useMovieSearch()`，将 `search` 和 `isLoading` 通过 props 传给 `SearchForm`
+
+**验证**：Next.js 构建成功
+
+### 6.4 项目精简 (2026-05-03)
+
+#### 删除的文件
+- **前端**：`Ai.tsx`, `DirectorIcon.tsx`, `EllipsisSpinner.tsx`, `ForgotPassword.tsx`, `IntegrationSpinner.tsx`, `LinkIcon.tsx`, `Map.tsx`, `Movie.tsx`, `Movies.tsx`, `Player.tsx`, `Suggestion.tsx`, `Suggestions.tsx`
+- **后端**：`setup_compiler.py`, `test_rag.py`, `test_retrieval.py`, `__init__.py`
+- **其他**：`docs/import.png`, `demo.mp4`, `langflow.json`, `scripts/` 目录
+
+#### 更新的文件
+- `package.json`：移除 7 个多余依赖（@ai-sdk/openai, @datastax/astra-db-ts, @datastax/langflow-client, ai, nanoid, openai, react-player），更新 scripts 路径
+- `Logo.tsx`：替换为 VibeMatch 品牌 Logo
+- `README.md`：更新项目结构、技术栈、启动命令
 
 ---
 
@@ -241,7 +258,7 @@ Phase 2 (RAG核心) ✅ ──▶ Phase 3 (Baseline) ✅
 Phase 5 (前端适配) ✅ ◀── Phase 4 (评估体系) ✅
     │
     ▼
-Phase 6 (集成测试) 🔄
+Phase 6 (集成测试) ✅
     │
     ▼
 Phase 7 (论文+Presentation)
