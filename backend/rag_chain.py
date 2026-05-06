@@ -5,6 +5,7 @@ import os
 from typing import List, Dict, Optional
 from dotenv import load_dotenv
 
+import httpx
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough, RunnableParallel, RunnableLambda
@@ -21,29 +22,36 @@ LLM_TEMPERATURE = 0.7
 
 
 def get_llm():
-    """Initialize LLM (NVIDIA API or OpenAI)."""
-    # Try NVIDIA API first
-    nvidia_key = os.getenv("NVIDIA_API_KEY")
-    if nvidia_key and nvidia_key != "nvapi-":
+    """Initialize LLM. Supports DeepSeek, any OpenAI-compatible provider, or OpenAI."""
+    # Bypass system proxy (e.g. Clash/VPN on 127.0.0.1:7890) to avoid SSL errors
+    no_proxy_client = httpx.Client(trust_env=False)
+
+    # Priority 1: DeepSeek (or any OpenAI-compatible provider via DEEPSEEK_* vars)
+    deepseek_key = os.getenv("DEEPSEEK_API_KEY")
+    if deepseek_key:
         return ChatOpenAI(
-            model=os.getenv("NVIDIA_MODEL", "minimaxai/minimax-m2.5"),
+            model=os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash"),
             temperature=LLM_TEMPERATURE,
-            api_key=nvidia_key,
-            base_url=os.getenv("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1"),
+            api_key=deepseek_key,
+            base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
             timeout=120,
-            max_retries=2
+            max_retries=2,
+            http_client=no_proxy_client,
         )
-    
-    # Fallback to OpenAI
+
+    # Priority 2: OpenAI
     openai_key = os.getenv("OPENAI_API_KEY")
     if openai_key:
         return ChatOpenAI(
             model="gpt-4o-mini",
             temperature=LLM_TEMPERATURE,
-            api_key=openai_key
+            api_key=openai_key,
+            http_client=no_proxy_client,
         )
-    
-    raise ValueError("No API key found. Please set NVIDIA_API_KEY or OPENAI_API_KEY in .env")
+
+    raise ValueError(
+        "No API key found. Please set DEEPSEEK_API_KEY or OPENAI_API_KEY in backend/.env"
+    )
 
 
 def format_docs(docs: List[Document]) -> str:

@@ -105,6 +105,50 @@ def process_dataset(
     return documents
 
 
+def merge_datasets(
+    old_path: str = "./data/movies_processed.json",
+    new_path: str = "./data/tmdb_new_movies.json",
+    output_path: str = "./data/movies_merged.json"
+) -> list:
+    """
+    Merge the original TMDB-5000 dataset with new movies fetched via TMDB API.
+    Deduplicates by title+year to avoid overlap.
+    """
+    import json as _json
+
+    # Load old dataset
+    with open(old_path, encoding="utf-8") as f:
+        old_docs = _json.load(f)
+    print(f"Old dataset: {len(old_docs)} movies")
+
+    # Load new dataset
+    if not Path(new_path).exists():
+        print(f"New dataset not found at {new_path}. Run fetch_tmdb_new.py first.")
+        return old_docs
+
+    with open(new_path, encoding="utf-8") as f:
+        new_docs = _json.load(f)
+    print(f"New dataset: {len(new_docs)} movies")
+
+    # Deduplicate by normalized title
+    seen = {doc["metadata"]["title"].lower().strip() for doc in old_docs}
+    added = 0
+    for doc in new_docs:
+        key = doc["metadata"]["title"].lower().strip()
+        if key not in seen:
+            seen.add(key)
+            old_docs.append(doc)
+            added += 1
+
+    print(f"Added {added} new unique movies → total {len(old_docs)} movies")
+
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        _json.dump(old_docs, f, ensure_ascii=False, indent=2)
+    print(f"Merged dataset saved to {output_path}")
+    return old_docs
+
+
 if __name__ == "__main__":
     documents = process_dataset()
     print(f"\nSample document:")

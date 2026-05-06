@@ -31,10 +31,11 @@ VibeMatch 是一个基于 RAG（Retrieval-Augmented Generation）的语义化电
 |:---|:---|
 | Python 3.10+ | 主开发语言 |
 | FastAPI | API 服务框架 |
-| LangChain | RAG 流程编排 |
+| LangChain 0.2.x (LCEL) | RAG 流程编排 |
 | ChromaDB 1.5.x | 本地向量数据库（预编译 wheel，无需 C++ 编译器） |
 | `all-MiniLM-L6-v2` (本地) | Embedding 模型（384 维，下载到项目目录） |
-| OpenAI GPT-4o-mini | 推荐生成 LLM |
+| DeepSeek `deepseek-v4-flash` | 主 LLM（通过 `DEEPSEEK_API_KEY` 配置） |
+| OpenAI GPT-4o-mini | 备选 LLM（`DEEPSEEK_API_KEY` 未设置时自动回退） |
 
 ### 数据
 | 来源 | 说明 |
@@ -99,6 +100,10 @@ cd AIE6002_Project
 编辑 `backend/.env` 文件：
 
 ```env
+# 主 LLM（推荐）
+DEEPSEEK_API_KEY=your_deepseek_api_key_here
+
+# 备选 LLM（DEEPSEEK_API_KEY 未设置时生效）
 OPENAI_API_KEY=your_openai_api_key_here
 ```
 
