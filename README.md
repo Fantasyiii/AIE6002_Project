@@ -39,7 +39,7 @@ VibeMatch 是一个基于 RAG（Retrieval-Augmented Generation）的语义化电
 ### 数据
 | 来源 | 说明 |
 |:---|:---|
-| TMDB 5000 Movie Dataset | 包含 4799 部有效电影的标题、类型、年份、剧情概述 |
+| TMDB 5000 Movie Dataset | 包含 8,254 部有效电影的标题、类型、年份、剧情概述 |
 
 ---
 
@@ -55,7 +55,10 @@ VibeMatch/
 │   ├── Logo.tsx                  # VibeMatch Logo
 │   ├── fonts.tsx                 # 字体配置
 │   ├── globals.css               # 全局样式
-│   └── layout.tsx                # 根布局
+│   ├── layout.tsx                # 根布局
+│   ├── LangContext.tsx           # 国际化语言上下文
+│   ├── Providers.tsx             # React Providers 包装
+│   └── i18n.ts                   # 国际化配置
 ├── backend/                      # Python 后端
 │   ├── main.py                   # FastAPI 入口
 │   ├── rag_chain.py              # LangChain RAG 核心
@@ -64,20 +67,26 @@ VibeMatch/
 │   ├── download_model.py         # 模型下载脚本（支持国内镜像）
 │   ├── prompts.py                # Prompt 模板
 │   ├── baselines.py              # 三种基线系统
+│   ├── fetch_tmdb_new.py         # 获取新电影数据脚本
 │   ├── requirements.txt          # Python 依赖
 │   ├── evaluation/               # 评估框架
 │   │   ├── test_queries.json     # 15 个测试查询
 │   │   ├── metrics.py            # 评估指标
-│   │   └── run_eval.py           # 自动化评估脚本
+│   │   ├── run_eval.py           # 自动化评估脚本
+│   │   └── results/              # 评估结果（已提交到 GitHub）
 │   ├── models/                   # 本地模型目录
 │   │   └── all-MiniLM-L6-v2/    # Embedding 模型文件
 │   ├── data/                     # 数据目录
-│   │   └── movies_processed.json # 处理后的电影数据
+│   │   ├── movies_processed.json # 处理后的电影数据
+│   │   ├── movies_merged.json    # 合并后的电影数据（8,254 部）
+│   │   └── tmdb_new_movies.json  # 新获取的电影数据
 │   └── chroma_db/                # ChromaDB 持久化存储
 ├── Dataset/                      # 原始数据集
 │   ├── tmdb_5000_movies.csv
 │   └── tmdb_5000_credits.csv
-├── main.tex                      # 项目提案（LaTeX）
+├── Report.md                     # 项目论文报告（Markdown）
+├── Report.tex                    # 项目论文报告（LaTeX）
+├── Presentation.md               # 课程 Presentation 脚本
 ├── PROGRESS.md                   # 项目进度追踪
 ├── 技术栈.md                      # 技术栈说明
 └── package.json                  # Node.js 依赖
@@ -91,7 +100,7 @@ VibeMatch/
 - Python 3.10+
 - Node.js 18+
 - npm
-- NVIDIA API Key（或 OpenAI API Key）
+- DeepSeek API Key（或 OpenAI API Key）
 
 ### 1. 克隆仓库
 
@@ -102,7 +111,7 @@ cd AIE6002_Project
 
 ### 2. 配置环境变量
 
-编辑 `backend/.env` 文件：
+复制 `.env.example` 为 `backend/.env` 并编辑：
 
 ```env
 # 主 LLM（推荐）
@@ -178,7 +187,7 @@ curl -X POST http://localhost:8000/chat \
 
 | 系统 | 描述 |
 |:---|:---|
-| **VibeMatch (Ours)** | 完整 RAG：ChromaDB + MMR + qwen3.5-122b |
+| **VibeMatch (Ours)** | 完整 RAG：ChromaDB + MMR + DeepSeek |
 | **Pure-LLM** | 直接调用 LLM，无检索上下文 |
 | **Tag-Based** | 基于 TMDB 类型标签的精确匹配过滤 |
 | **Retrieval-Only** | 仅返回 ChromaDB 检索结果，无 LLM 生成 |
@@ -189,6 +198,38 @@ curl -X POST http://localhost:8000/chat \
 - **Intra-List Diversity**：推荐列表的多样性分数
 - **Latency**：端到端响应延迟（ms）
 - **ROUGE-L**：生成文本与参考摘要的重叠度
+
+### 最新评估结果
+
+基于 15 个测试查询的评估结果：
+
+| System | Hallucination Rate | Avg Latency | Avg Recommendations |
+|:---|:---:|:---:|:---:|
+| VibeMatch (RAG) | 59% | 10,355ms | 5.0 |
+| VibeMatch (MMR) | 54% | 8,471ms | 5.0 |
+| Pure-LLM | 100% | 10,529ms | 0.0 |
+| Tag-Based | 100% | 77ms | 0.0 |
+| Retrieval-Only | 7% | 1,732ms | 5.0 |
+
+**关键发现**：
+- RAG 相比 Pure-LLM 显著降低了幻觉率（100% → 59%）
+- MMR 模式比 Similarity 模式幻觉率更低（54% vs 59%）
+- Retrieval-Only 幻觉率最低（7%），但缺乏 LLM 的解释能力
+
+完整评估结果保存在 `backend/evaluation/results/` 目录。
+
+---
+
+## 课程交付物
+
+本项目为 AIE6002 Large Language Models 课程最终项目，包含以下交付物：
+
+| 文件 | 说明 |
+|:---|:---|
+| [Report.md](Report.md) | 项目论文报告（Markdown 格式） |
+| [Report.tex](Report.tex) | 项目论文报告（LaTeX 格式） |
+| [Presentation.md](Presentation.md) | 课程 Presentation 脚本（约 8 分钟） |
+| [PROGRESS.md](PROGRESS.md) | 项目开发进度追踪 |
 
 ---
 
@@ -204,7 +245,7 @@ curl -X POST http://localhost:8000/chat \
 | **Baseline 对比** | 无 | 3 种基线系统 |
 | **评估体系** | 无 | 完整量化指标 + 消融实验 |
 | **溯源展示** | 无 | 可展开源数据面板 |
-| **部署依赖** | 5 个云服务账号 | 1 个 NVIDIA API Key |
+| **部署依赖** | 5 个云服务账号 | 1 个 DeepSeek API Key |
 
 ---
 

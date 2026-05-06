@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { sora } from "./fonts";
-import { Providers } from "./Providers";
+import { Ai } from "./Ai";
 
 export const metadata: Metadata = {
-  title: "VibeMatch - AI Movie Recommendations",
-  description: "RAG-powered semantic movie recommendation system",
+  title: "Movies++",
+  description: "Built with ❤️ by DataStax DevRel",
 };
 
 export default function RootLayout({
@@ -14,12 +14,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${sora.className} bg-black flex items-center text-white`}
-      >
-        <Providers>{children}</Providers>
-      </body>
-    </html>
+    <Ai>
+      <html lang="en">
+        <body
+          className={`${sora.className} bg-black flex items-center text-white`}
+        >
+          {children}
+        </body>
+      </html>
+    </Ai>
   );
 }
