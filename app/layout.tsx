@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { sora } from "./fonts";
+import { Providers } from "./Providers";
 
 export const metadata: Metadata = {
   title: "VibeMatch - AI Movie Recommendations",
@@ -17,7 +18,7 @@ export default function RootLayout({
       <body
         className={`${sora.className} bg-black flex items-center text-white`}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

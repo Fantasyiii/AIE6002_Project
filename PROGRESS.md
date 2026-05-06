@@ -88,9 +88,10 @@
 - 修复 `global pipeline` SyntaxError，改用函数参数传递
 
 ### API 配置
-- 使用 NVIDIA API (`qwen/qwen3.5-122b-a10b`)
+- 主 LLM：DeepSeek（`deepseek-v4-flash`），通过 `DEEPSEEK_API_KEY` 配置
+- 备选 LLM：OpenAI GPT-4o-mini，`DEEPSEEK_API_KEY` 未配置时自动回退
+- LLM 初始化逻辑见 `rag_chain.py` → `get_llm()`
 - API Key 配置在 `backend/.env` 中
-- 支持 OpenAI 回退
 
 ---
 
@@ -276,5 +277,5 @@ Phase 7 (论文+Presentation)
 
 ---
 
-*最后更新：2026-05-03*
-*当前进度：Phase 6 完成，Phase 7 待开始*
+*最后更新：2026-05-06*
+*当前进度：Phase 5 完成，Phase 6 进行中*

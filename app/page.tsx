@@ -5,6 +5,7 @@ import { SearchForm } from "./SearchForm";
 import { useMovieSearch } from "./useMovieSearch";
 import { Markdown } from "./Markdown";
 import { MovieSource } from "./useMovieSearch";
+import { useLang } from "./LangContext";
 
 function SourceCard({ source }: { source: MovieSource }) {
   return (
@@ -22,6 +23,7 @@ function SourceCard({ source }: { source: MovieSource }) {
 
 export default function Home() {
   const { messages, isLoading, search } = useMovieSearch();
+  const { t, toggleLang } = useLang();
   const hasMessages = messages.length > 0;
 
   return (
@@ -37,9 +39,16 @@ export default function Home() {
         <Logo />
         <SearchForm
           shouldShowSuggestions={!hasMessages}
-          onSearch={search}
+          onSearch={(q) => search(q, t.errorMsg)}
           isLoading={isLoading}
+          t={t}
         />
+        <button
+          onClick={toggleLang}
+          className="shrink-0 text-sm px-3 py-1.5 rounded-md border border-[#404040] text-[grey] hover:text-white hover:border-white transition-colors whitespace-nowrap"
+        >
+          {t.langToggle}
+        </button>
       </header>
 
       {hasMessages && (
@@ -60,7 +69,7 @@ export default function Home() {
                   {msg.sources && msg.sources.length > 0 && (
                     <div>
                       <div className="text-xs text-[grey] uppercase tracking-wider mb-2">
-                        Sources
+                        {t.sources}
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {msg.sources.map((source, sidx) => (
@@ -71,7 +80,7 @@ export default function Home() {
                   )}
                   {msg.latency_ms && (
                     <div className="text-xs text-[#555]">
-                      Response time: {msg.latency_ms.toFixed(0)}ms
+                      {t.responseTime} {msg.latency_ms.toFixed(0)}ms
                     </div>
                   )}
                 </div>
@@ -81,7 +90,7 @@ export default function Home() {
           {isLoading && (
             <div className="flex items-center gap-3 text-[grey]">
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm">Thinking...</span>
+              <span className="text-sm">{t.thinking}</span>
             </div>
           )}
         </div>

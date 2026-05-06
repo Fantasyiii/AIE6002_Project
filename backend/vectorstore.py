@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 from typing import List, Dict, Optional
 
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 from langchain_core.documents import Document
 
@@ -14,22 +14,32 @@ from langchain_core.documents import Document
 # Configuration
 CHROMA_PERSIST_DIR = "./chroma_db"
 COLLECTION_NAME = "movies"
-MODEL_PATH = "./models/all-MiniLM-L6-v2"
+# Multilingual model — supports Chinese and English queries
+MODEL_PATH = "./models/paraphrase-multilingual-MiniLM-L12-v2"
+MODEL_FALLBACK_PATH = "./models/all-MiniLM-L6-v2"
 
 
 def get_embeddings():
-    """Initialize local HuggingFace embedding model."""
-    model_path = Path(MODEL_PATH)
+    """Initialize local HuggingFace embedding model. Prefers multilingual model."""
+    multilingual_path = Path("./models/paraphrase-multilingual-MiniLM-L12-v2")
+    fallback_path = Path("./models/all-MiniLM-L6-v2")
 
-    if model_path.exists():
-        print(f"Loading local model from {model_path}...")
+    if multilingual_path.exists():
+        print(f"Loading multilingual model from {multilingual_path}...")
         return HuggingFaceEmbeddings(
-            model_name=str(model_path),
+            model_name=str(multilingual_path),
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"normalize_embeddings": True}
+        )
+    elif fallback_path.exists():
+        print(f"Multilingual model not found. Falling back to {fallback_path}...")
+        return HuggingFaceEmbeddings(
+            model_name=str(fallback_path),
             model_kwargs={"device": "cpu"},
             encode_kwargs={"normalize_embeddings": True}
         )
     else:
-        print("Local model not found. Falling back to OpenAI embeddings...")
+        print("No local model found. Falling back to OpenAI embeddings...")
         from langchain_openai import OpenAIEmbeddings
         return OpenAIEmbeddings(
             model="text-embedding-3-small",
@@ -37,8 +47,12 @@ def get_embeddings():
         )
 
 
-def load_documents(json_path: str = "./data/movies_processed.json") -> List[Document]:
-    """Load processed movie documents from JSON."""
+def load_documents(json_path: str = None) -> List[Document]:
+    """Load processed movie documents. Prefers merged dataset if available."""
+    if json_path is None:
+        merged = "./data/movies_merged.json"
+        json_path = merged if os.path.exists(merged) else "./data/movies_processed.json"
+    print(f"Loading documents from {json_path}...")
     import json
 
     with open(json_path, "r", encoding="utf-8") as f:
@@ -166,12 +180,18 @@ def init_vectorstore():
         print("Vector store already exists. Loading...")
         return load_vectorstore()
 
-    # Process data if needed
-    data_path = "./data/movies_processed.json"
-    if not os.path.exists(data_path):
+    # Prefer merged dataset, fall back to original
+    merged_path = "./data/movies_merged.json"
+    original_path = "./data/movies_processed.json"
+    if os.path.exists(merged_path):
+        data_path = merged_path
+    elif os.path.exists(original_path):
+        data_path = original_path
+    else:
         print("Processed data not found. Running data processor...")
         from data_processor import process_dataset
         process_dataset()
+        data_path = original_path
 
     # Load and create vector store
     documents = load_documents(data_path)

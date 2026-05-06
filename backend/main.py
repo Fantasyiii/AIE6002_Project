@@ -63,7 +63,7 @@ async def startup_event():
         print("RAG pipeline initialized successfully")
     except Exception as e:
         print(f"Failed to initialize pipeline: {e}")
-        print("Please ensure vector store is created by running: python vectorstore.py")
+        print("Set DEEPSEEK_API_KEY (or OPENAI_API_KEY) in backend/.env, then restart.")
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
@@ -84,12 +84,46 @@ async def chat(request: ChatRequest):
     Returns:
         ChatResponse with answer, sources, and metadata
     """
-    if not pipeline:
-        raise HTTPException(status_code=503, detail="RAG pipeline not initialized")
-
     start_time = time.time()
 
     try:
+        if not pipeline:
+            # Fallback mode: retrieval-only response when LLM key is not configured.
+            retriever = create_retrieval_chain(
+                retrieval_mode=request.retrieval_mode,
+                top_k=request.top_k
+            )
+            docs = retriever(request.query)
+
+            answer_lines = [
+                "LLM API key is not configured, so this response is generated in retrieval-only fallback mode.",
+                "",
+                "Top retrieved movies:"
+            ]
+            for i, doc in enumerate(docs, 1):
+                answer_lines.append(
+                    f"{i}. {doc.metadata['title']} ({doc.metadata.get('year', 'N/A')}) - "
+                    f"{doc.metadata.get('genres', 'N/A')}"
+                )
+
+            latency_ms = (time.time() - start_time) * 1000
+            return ChatResponse(
+                query=request.query,
+                answer="\n".join(answer_lines),
+                sources=[
+                    {
+                        "title": doc.metadata["title"],
+                        "year": doc.metadata.get("year", "N/A"),
+                        "genres": doc.metadata.get("genres", "N/A"),
+                        "overview": doc.metadata.get("overview", "N/A")[:200],
+                    }
+                    for doc in docs
+                ],
+                retrieval_mode=f"{request.retrieval_mode}-fallback",
+                top_k=request.top_k,
+                latency_ms=round(latency_ms, 2)
+            )
+
         # Update pipeline configuration if needed
         nonlocal_pipeline = pipeline
         if request.retrieval_mode != nonlocal_pipeline.retrieval_mode or request.top_k != nonlocal_pipeline.top_k:

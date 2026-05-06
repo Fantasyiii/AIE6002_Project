@@ -2,6 +2,7 @@
 Automated evaluation script for all systems.
 """
 import json
+import os
 import sys
 from typing import List, Dict
 from pathlib import Path
@@ -26,11 +27,17 @@ def run_evaluation():
     queries = load_test_queries()
     print(f"Loaded {len(queries)} test queries")
 
+    has_llm_key = bool(os.getenv("OPENAI_API_KEY") or os.getenv("NVIDIA_API_KEY"))
+    if not has_llm_key:
+        print("No LLM API key found. Skipping LLM-dependent systems (RAG/MMR/Pure-LLM).")
+
     # Initialize systems
-    systems = {
-        "VibeMatch (RAG)": RAGPipeline(retrieval_mode="similarity", top_k=5),
-        "VibeMatch (MMR)": RAGPipeline(retrieval_mode="mmr", top_k=5),
-    }
+    systems = {}
+    if has_llm_key:
+        systems = {
+            "VibeMatch (RAG)": RAGPipeline(retrieval_mode="similarity", top_k=5),
+            "VibeMatch (MMR)": RAGPipeline(retrieval_mode="mmr", top_k=5),
+        }
 
     results = {
         "VibeMatch (RAG)": [],
@@ -45,36 +52,39 @@ def run_evaluation():
         query_text = q["query"]
         print(f"\nQuery: {query_text}")
 
-        # VibeMatch RAG
-        try:
-            result, latency = measure_latency(
-                systems["VibeMatch (RAG)"].recommend, query_text
-            )
-            result["latency_ms"] = latency
-            results["VibeMatch (RAG)"].append(result)
-            print(f"  RAG: {len(result['sources'])} sources, {latency:.0f}ms")
-        except Exception as e:
-            print(f"  RAG failed: {e}")
+        if has_llm_key:
+            # VibeMatch RAG
+            try:
+                result, latency = measure_latency(
+                    systems["VibeMatch (RAG)"].recommend, query_text
+                )
+                result["latency_ms"] = latency
+                results["VibeMatch (RAG)"].append(result)
+                print(f"  RAG: {len(result['sources'])} sources, {latency:.0f}ms")
+            except Exception as e:
+                print(f"  RAG failed: {e}")
 
-        # VibeMatch MMR
-        try:
-            result, latency = measure_latency(
-                systems["VibeMatch (MMR)"].recommend, query_text
-            )
-            result["latency_ms"] = latency
-            results["VibeMatch (MMR)"].append(result)
-            print(f"  MMR: {len(result['sources'])} sources, {latency:.0f}ms")
-        except Exception as e:
-            print(f"  MMR failed: {e}")
+            # VibeMatch MMR
+            try:
+                result, latency = measure_latency(
+                    systems["VibeMatch (MMR)"].recommend, query_text
+                )
+                result["latency_ms"] = latency
+                results["VibeMatch (MMR)"].append(result)
+                print(f"  MMR: {len(result['sources'])} sources, {latency:.0f}ms")
+            except Exception as e:
+                print(f"  MMR failed: {e}")
 
-        # Pure-LLM
-        try:
-            result, latency = measure_latency(baseline_pure_llm, query_text)
-            result["latency_ms"] = latency
-            results["Pure-LLM"].append(result)
-            print(f"  Pure-LLM: {latency:.0f}ms")
-        except Exception as e:
-            print(f"  Pure-LLM failed: {e}")
+            # Pure-LLM
+            try:
+                result, latency = measure_latency(baseline_pure_llm, query_text)
+                result["latency_ms"] = latency
+                results["Pure-LLM"].append(result)
+                print(f"  Pure-LLM: {latency:.0f}ms")
+            except Exception as e:
+                print(f"  Pure-LLM failed: {e}")
+        else:
+            print("  RAG/MMR/Pure-LLM: skipped (no API key)")
 
         # Tag-Based
         try:

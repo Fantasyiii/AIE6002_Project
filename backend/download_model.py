@@ -1,12 +1,13 @@
 """
 Download embedding model to project directory using Chinese mirror.
+Uses multilingual model to support Chinese and English queries.
 """
 import os
 from pathlib import Path
 
-# Model configuration
-MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-MODEL_DIR = Path("./models/all-MiniLM-L6-v2")
+# Model configuration — multilingual, supports Chinese + English
+MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+MODEL_DIR = Path("./models/paraphrase-multilingual-MiniLM-L12-v2")
 
 
 def download_model():
@@ -28,7 +29,16 @@ def download_model():
         os.environ["HF_ENDPOINT"] = mirror
 
         try:
-            from huggingface_hub import snapshot_download
+            # Bypass Windows system proxy (Clash/VPN) which breaks SSL
+            from huggingface_hub import configure_http_backend, snapshot_download
+            import requests as _req
+
+            def _no_proxy_session():
+                s = _req.Session()
+                s.trust_env = False
+                return s
+
+            configure_http_backend(backend_factory=_no_proxy_session)
 
             # Download all model files to target directory
             downloaded_path = snapshot_download(

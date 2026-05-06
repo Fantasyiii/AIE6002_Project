@@ -23,13 +23,13 @@ export type ChatResponse = {
   latency_ms?: number;
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = "/api";
 
 export function useMovieSearch() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const search = useCallback(async (prompt: string) => {
+  const search = useCallback(async (prompt: string, errorMsg?: string) => {
     if (!prompt.trim()) return;
 
     const userMessage: Message = { role: "user", content: prompt };
@@ -63,11 +63,13 @@ export function useMovieSearch() {
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Search error:", error);
-      const errorMessage: Message = {
+      const assistantMessage: Message = {
         role: "assistant",
-        content: "Sorry, I encountered an error while searching for movies. Please make sure the backend server is running.",
+        content:
+          errorMsg ||
+          "Sorry, I encountered an error while searching for movies. Please make sure the backend server is running.",
       };
-      setMessages((prev) => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
     } finally {
       setIsLoading(false);
     }
