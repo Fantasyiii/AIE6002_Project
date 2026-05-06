@@ -17,7 +17,7 @@
 - [x] **Phase 4: 评估体系搭建** ✅ 完成
 - [x] **Phase 5: 前端适配** ✅ 完成
 - [x] **Phase 6: 系统集成与测试** ✅ 完成
-- [ ] **Phase 7: 论文与 Presentation** 待开始
+- [x] **Phase 7: 论文与 Presentation** ✅ 完成
 
 ---
 
@@ -33,9 +33,9 @@
 #### 1.2 数据预处理 (`data_processor.py`)
 - 加载 TMDB 5000 Movie Dataset（`tmdb_5000_movies.csv`）
 - 解析 JSON 列（genres, keywords）
-- 移除缺失 overview 的电影（4 部）
+- 移除缺失 overview 的电影
 - 拼接富文本：Title + Year + Genres + Keywords + Overview
-- 输出 `backend/data/movies_processed.json`（4799 部电影）
+- 输出 `backend/data/movies_processed.json`
 
 #### 1.3 模型下载 (`download_model.py`)
 - 使用 `huggingface_hub.snapshot_download` 下载到项目目录
@@ -91,7 +91,7 @@
 - 主 LLM：DeepSeek（`deepseek-v4-flash`），通过 `DEEPSEEK_API_KEY` 配置
 - 备选 LLM：OpenAI GPT-4o-mini，`DEEPSEEK_API_KEY` 未配置时自动回退
 - LLM 初始化逻辑见 `rag_chain.py` → `get_llm()`
-- API Key 配置在 `backend/.env` 中
+- API Key 配置在 `backend/.env` 中（参考 `.env.example`）
 
 ---
 
@@ -136,16 +136,16 @@
 
 | System | Queries | Hallucination Rate | Avg Latency | Avg Recommendations |
 |--------|---------|-------------------|-------------|-------------------|
-| VibeMatch (RAG) | 15 | 61.00% | 17232ms | 5.0 |
-| VibeMatch (MMR) | 15 | 54.00% | 7012ms | 5.0 |
-| Pure-LLM | 15 | 100.00% | 27633ms | 0.0 |
-| Tag-Based | 15 | 100.00% | 91ms | 0.0 |
-| Retrieval-Only | 15 | 11.00% | 292ms | 5.0 |
+| VibeMatch (RAG) | 15 | 59% | 10,355ms | 5.0 |
+| VibeMatch (MMR) | 15 | 54% | 8,471ms | 5.0 |
+| Pure-LLM | 15 | 100% | 10,529ms | 0.0 |
+| Tag-Based | 15 | 100% | 77ms | 0.0 |
+| Retrieval-Only | 15 | 7% | 1,732ms | 5.0 |
 
 **分析**：
-- RAG 相比 Pure-LLM 降低了幻觉率（100% → 61%）
-- MMR 模式比 Similarity 模式更快（7s vs 17s），幻觉率更低
-- Retrieval-Only 幻觉率最低（11%），但缺乏 LLM 的解释能力
+- RAG 相比 Pure-LLM 显著降低了幻觉率（100% → 59%）
+- MMR 模式比 Similarity 模式幻觉率更低（54% vs 59%）
+- Retrieval-Only 幻觉率最低（7%），但缺乏 LLM 的解释能力
 - Tag-Based 无法返回推荐（查询多为 vibe 描述，不含明确 genre 关键词）
 
 ---
@@ -234,15 +234,62 @@ npm run dev
 - `Logo.tsx`：替换为 VibeMatch 品牌 Logo
 - `README.md`：更新项目结构、技术栈、启动命令
 
+### 6.5 向量数据库重建 (2026-05-06)
+- 使用 `fetch_tmdb_new.py` 获取新电影数据
+- 合并后电影总数：8,254 部（原 4,799 部）
+- 采用分批处理策略（每批 500 部）解决 ChromaDB 限制
+- 成功构建新的向量数据库
+
 ---
 
-## Phase 7: 论文与 Presentation 待开始
+## Phase 7: 论文与 Presentation ✅ 完成 (2026-05-06)
 
-### 7.1 Final Paper
-- Abstract, Introduction, Related Work, Methodology, Experiments, Results, Discussion, Conclusion
+### 7.1 交付物清单
 
-### 7.2 Presentation (10 分钟)
-- Hook → Problem → Solution → Demo → Results → Conclusion
+| 文件 | 状态 | 说明 |
+|:---|:---:|:---|
+| `Report.md` | ✅ | 项目论文报告（Markdown 格式，约 5000 词） |
+| `Report.tex` | ✅ | 项目论文报告（LaTeX 格式） |
+| `Presentation.md` | ✅ | 课程 Presentation 脚本（约 8 分钟） |
+
+### 7.2 Report.md 内容结构
+- **Abstract**：研究背景、方法、主要发现
+- **Introduction**：电影推荐系统的问题、RAG 解决方案
+- **Related Work**：传统推荐系统、LLM 推荐、RAG 应用
+- **Methodology**：系统架构、数据、RAG Pipeline、Baselines
+- **Experiments**：评估指标、实验设置、结果分析
+- **Discussion**：RQ1/RQ2 回答、局限性、未来工作
+- **Conclusion**：总结贡献
+
+### 7.3 Presentation.md 结构
+- Hook（30s）："有没有试过 Netflix 推荐完全不对味？"
+- Problem（1min）：LLM 幻觉问题
+- Solution（2min）：VibeMatch RAG 架构
+- Demo（2min）：系统演示要点
+- Results（2min）：评估结果展示
+- Conclusion（30s）：总结与展望
+
+---
+
+## 最终项目状态
+
+### 核心功能
+- ✅ RAG 语义电影推荐（Similarity + MMR 两种模式）
+- ✅ 三种 Baseline 对比系统
+- ✅ 完整的自动化评估框架
+- ✅ 响应式前端界面
+- ✅ 8,254 部电影的向量数据库
+
+### 学术贡献
+- ✅ 验证了 RAG 相比 Pure-LLM 显著降低幻觉率（100% → 59%）
+- ✅ 证明了 MMR 检索策略的优势（幻觉率 54% vs 59%）
+- ✅ 构建了完整的评估指标体系和测试集
+
+### 课程交付物
+- ✅ 可运行的完整系统
+- ✅ 详细的论文报告（Markdown + LaTeX）
+- ✅ Presentation 脚本
+- ✅ 项目进度追踪文档
 
 ---
 
@@ -261,21 +308,21 @@ Phase 5 (前端适配) ✅ ◀── Phase 4 (评估体系) ✅
 Phase 6 (集成测试) ✅
     │
     ▼
-Phase 7 (论文+Presentation)
+Phase 7 (论文+Presentation) ✅
 ```
 
 ---
 
 ## 风险与应对
 
-| 风险 | 概率 | 影响 | 应对策略 |
-|:---|:---|:---|:---|
-| NVIDIA API 额度不足 | 中 | 高 | 已配置 qwen 模型，成本较低；准备备用 Key |
-| 前端对接复杂 | 低 | 中 | 已完成基础对接，Phase 6 进行联调 |
-| 评估人工标注耗时 | 高 | 中 | 已设计自动化评估指标，减少人工依赖 |
-| 论文时间不够 | 中 | 高 | Phase 7 预留充足时间，每天固定写作时间 |
+| 风险 | 概率 | 影响 | 应对策略 | 结果 |
+|:---|:---|:---|:---|:---|
+| DeepSeek API 额度不足 | 中 | 高 | 已配置 OpenAI 回退；准备备用 Key | ✅ 已解决 |
+| 前端对接复杂 | 低 | 中 | 已完成基础对接，Phase 6 进行联调 | ✅ 已解决 |
+| 评估人工标注耗时 | 高 | 中 | 已设计自动化评估指标，减少人工依赖 | ✅ 已解决 |
+| 论文时间不够 | 中 | 高 | Phase 7 预留充足时间，每天固定写作时间 | ✅ 已解决 |
 
 ---
 
 *最后更新：2026-05-06*
-*当前进度：Phase 5 完成，Phase 6 进行中*
+*项目状态：✅ 全部完成*

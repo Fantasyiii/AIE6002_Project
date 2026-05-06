@@ -71,14 +71,17 @@ def load_documents(json_path: str = None) -> List[Document]:
 
 def create_vectorstore(
     documents: List[Document],
-    persist_dir: str = CHROMA_PERSIST_DIR
+    persist_dir: str = CHROMA_PERSIST_DIR,
+    batch_size: int = 5000
 ) -> Chroma:
     """
     Create and persist ChromaDB vector store from documents.
+    Processes documents in batches to avoid ChromaDB batch size limits.
 
     Args:
         documents: List of LangChain Document objects
         persist_dir: Directory to persist the vector store
+        batch_size: Number of documents to process per batch (default 5000)
 
     Returns:
         Chroma vector store instance
@@ -87,12 +90,23 @@ def create_vectorstore(
     embeddings = get_embeddings()
 
     print(f"Creating vector store with {len(documents)} documents...")
-    vectorstore = Chroma.from_documents(
-        documents=documents,
-        embedding=embeddings,
+    
+    # Create empty vector store first
+    vectorstore = Chroma(
         persist_directory=persist_dir,
+        embedding_function=embeddings,
         collection_name=COLLECTION_NAME
     )
+    
+    # Process documents in batches
+    total = len(documents)
+    for i in range(0, total, batch_size):
+        batch = documents[i:i + batch_size]
+        print(f"Processing batch {i//batch_size + 1}/{(total + batch_size - 1)//batch_size}: {len(batch)} documents...")
+        vectorstore.add_documents(batch)
+    
+    # Persist the vector store
+    vectorstore.persist()
 
     print(f"Vector store persisted to {persist_dir}")
     return vectorstore

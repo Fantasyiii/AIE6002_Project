@@ -1,4 +1,23 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 export function Logo() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="flex items-center w-[192px] gap-2">
+        <div className="w-6 h-6" />
+        <span className="font-bold text-white">VibeMatch</span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center w-[192px] gap-2">
       <svg

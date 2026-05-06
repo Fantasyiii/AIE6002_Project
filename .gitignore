@@ -282,8 +282,8 @@ wheels/
 chroma_db/
 *.sqlite3
 
-# Evaluation results
-results/
+# Evaluation results - now tracked for sharing
+# results/
 
 # Model cache
 models/
